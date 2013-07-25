@@ -64,6 +64,13 @@ extern OCnode* makeunlimiteddimension(void);
 /* Collect global state info in one place */
 struct OCGLOBALSTATE ocglobalstate;
 
+char NC_HTTPRC_CUSTOM_DIRECTORY[1024];
+
+void 
+ocsethttprcdirectory(char *path) {
+	strcpy(NC_HTTPRC_CUSTOM_DIRECTORY,path);
+};
+
 int
 ocinternalinitialize(void)
 {
@@ -88,17 +95,33 @@ ocinternalinitialize(void)
 	char** alias;
 	FILE* f = NULL;
         /* locate the configuration files: . first in '.',  then $HOME */
-	for(alias=rcfilenames;*alias;alias++) {
-	    size_t pathlen = strlen("./")+strlen(*alias)+1;
-            path = (char*)malloc(pathlen);
-	    if(path == NULL) return OC_ENOMEM;
-	    if(!occopycat(path,pathlen,2,"./",*alias))
-		return OC_EOVERRUN;
-  	    /* see if file is readable */
-	    f = fopen(path,"r");
-	    if(f != NULL) break;
-    	    if(path != NULL) {free(path); path = NULL;} /* cleanup */
-	}
+        /*NC_HTTPRC_CUSTOM_DIRECTORY="/export/leung25/.esg/proxycerts/448000";*/
+        printf("HTTP PATH: ----%s----\n",NC_HTTPRC_CUSTOM_DIRECTORY);
+        if (NC_HTTPRC_CUSTOM_DIRECTORY!= NULL) {
+	    for(alias=rcfilenames;*alias;alias++) {
+	        size_t pathlen = strlen(NC_HTTPRC_CUSTOM_DIRECTORY)+1+strlen(*alias)+1;
+	        path = (char*)malloc(pathlen);
+	        if(path == NULL) return OC_ENOMEM;
+	        if(!occopycat(path,pathlen,3,NC_HTTPRC_CUSTOM_DIRECTORY,"/",*alias))
+		    return OC_EOVERRUN;
+		f = fopen(path,"r");
+		if(f != NULL) break;
+ 	        if(path != NULL) {free(path); path=NULL;}
+	    }
+        }
+        if (f == NULL){
+            for(alias=rcfilenames;*alias;alias++) {
+                size_t pathlen = strlen("./")+strlen(*alias)+1;
+                path = (char*)malloc(pathlen);
+                if(path == NULL) return OC_ENOMEM;
+                if(!occopycat(path,pathlen,2,"./",*alias))
+                    return OC_EOVERRUN;
+                /* see if file is readable */
+                f = fopen(path,"r");
+                if(f != NULL) break;
+                if(path != NULL) {free(path); path = NULL;} /* cleanup */
+            }
+        }
 	if(f == NULL) { /* try $HOME */
 	    OCASSERT(path == NULL);
             homepath = getenv("HOME");

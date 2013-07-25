@@ -426,6 +426,8 @@ EXTERNL int ncerr;
 EXTERNL int ncopts;
 #endif
 
+EXTERNL void ocsethttprcdirectory(char *path);
+
 EXTERNL const char *
 nc_inq_libvers(void);
 
